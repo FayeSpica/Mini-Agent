@@ -2,6 +2,8 @@
 
 import json
 import logging
+from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from openai import AsyncOpenAI
@@ -44,6 +46,9 @@ class OpenAIClient(LLMClientBase):
             api_key=api_key,
             base_url=api_base,
         )
+        
+        # Chat history log file path
+        self.chat_history_log = Path("chat_history.log")
 
     async def _make_api_request(
         self,
@@ -258,6 +263,73 @@ class OpenAIClient(LLMClientBase):
             usage=usage,
         )
 
+    def _log_chat_history(
+        self,
+        messages: list[Message],
+        tools: list[Any] | None,
+        response: LLMResponse,
+    ) -> None:
+        """Log chat history to file.
+
+        Args:
+            messages: List of conversation messages (request)
+            tools: Optional list of available tools
+            response: LLMResponse object (response)
+        """
+        try:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            with open(self.chat_history_log, "a", encoding="utf-8") as f:
+                f.write(f"\n{'='*80}\n")
+                f.write(f"Timestamp: {timestamp}\n")
+                f.write(f"Model: {self.model}\n")
+                f.write(f"{'='*80}\n\n")
+                
+                # Log request messages
+                f.write("=== REQUEST ===\n")
+                for i, msg in enumerate(messages):
+                    f.write(f"\nMessage {i+1} [{msg.role}]:\n")
+                    if isinstance(msg.content, str):
+                        f.write(f"Content: {msg.content}\n")
+                    else:
+                        f.write(f"Content: {json.dumps(msg.content, ensure_ascii=False, indent=2)}\n")
+                    if msg.thinking:
+                        f.write(f"Thinking: {msg.thinking}\n")
+                    if msg.tool_calls:
+                        f.write(f"Tool Calls: {json.dumps([tc.model_dump() for tc in msg.tool_calls], ensure_ascii=False, indent=2)}\n")
+                    if msg.tool_call_id:
+                        f.write(f"Tool Call ID: {msg.tool_call_id}\n")
+                
+                # Log tools if present
+                if tools:
+                    f.write(f"\nTools: {len(tools)} tool(s) available\n")
+                    for i, tool in enumerate(tools):
+                        if isinstance(tool, dict):
+                            f.write(f"Tool {i+1}: {json.dumps(tool, ensure_ascii=False, indent=2)}\n")
+                        elif hasattr(tool, "to_openai_schema"):
+                            f.write(f"Tool {i+1}: {json.dumps(tool.to_openai_schema(), ensure_ascii=False, indent=2)}\n")
+                        else:
+                            f.write(f"Tool {i+1}: {str(tool)}\n")
+                
+                # Log response
+                f.write(f"\n=== RESPONSE ===\n")
+                if response.content:
+                    f.write(f"Content: {response.content}\n")
+                if response.thinking:
+                    f.write(f"Thinking: {response.thinking}\n")
+                if response.tool_calls:
+                    f.write(f"Tool Calls: {json.dumps([tc.model_dump() for tc in response.tool_calls], ensure_ascii=False, indent=2)}\n")
+                if response.usage:
+                    f.write(f"Token Usage: prompt={response.usage.prompt_tokens}, "
+                           f"completion={response.usage.completion_tokens}, "
+                           f"total={response.usage.total_tokens}\n")
+                f.write(f"Finish Reason: {response.finish_reason}\n")
+                
+                f.write(f"\n{'='*80}\n\n")
+                
+        except Exception as e:
+            logger.warning(f"Failed to write chat history to {self.chat_history_log}: {e}")
+
     async def generate(
         self,
         messages: list[Message],
@@ -291,5 +363,11 @@ class OpenAIClient(LLMClientBase):
                 request_params["tools"],
             )
 
-        # Parse and return response
-        return self._parse_response(response)
+        # Parse response
+        llm_response = self._parse_response(response)
+        
+        # Log chat history
+        self._log_chat_history(messages, tools, llm_response)
+        
+        # Return response
+        return llm_response

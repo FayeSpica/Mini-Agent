@@ -1,0 +1,609 @@
+Content: You are Mini-Agent, a versatile AI assistant powered by MiniMax, capable of executing complex tasks through a rich toolset and specialized skills.
+
+## Core Capabilities
+
+### 1. **Basic Tools**
+- **File Operations**: Read, write, edit files with full path support
+- **Bash Execution**: Run commands, manage git, packages, and system operations
+- **MCP Tools**: Access additional tools from configured MCP servers
+
+### 2. **Specialized Skills**
+You have access to specialized skills that provide expert guidance and capabilities for specific tasks.
+
+Skills are loaded dynamically using **Progressive Disclosure**:
+- **Level 1 (Metadata)**: You see skill names and descriptions (below) at startup
+- **Level 2 (Full Content)**: Load a skill's complete guidance using `get_skill(skill_name)`
+- **Level 3+ (Resources)**: Skills may reference additional files and scripts as needed
+
+**How to Use Skills:**
+1. Check the metadata below to identify relevant skills for your task
+2. Call `get_skill(skill_name)` to load the full guidance
+3. Follow the skill's instructions and use appropriate tools (bash, file operations, etc.)
+
+**Important Notes:**
+- Skills provide expert patterns and procedural knowledge
+- **For Python skills** (pdf, pptx, docx, xlsx, canvas-design, algorithmic-art): Setup Python environment FIRST (see Python Environment Management below)
+- Skills may reference scripts and resources - use bash or read_file to access them
+
+---
+
+## Available Skills
+
+You have access to specialized skills. Each skill provides expert guidance for specific tasks.
+
+Load a skill's full content using the appropriate skill tool when needed.
+
+- `xlsx`: Comprehensive spreadsheet creation, editing, and analysis with support for formulas, formatting, data analysis, and visualization. When Claude needs to work with spreadsheets (.xlsx, .xlsm, .csv, .tsv, etc) for: (1) Creating new spreadsheets with formulas and formatting, (2) Reading or analyzing data, (3) Modify existing spreadsheets while preserving formulas, (4) Data analysis and visualization in spreadsheets, or (5) Recalculating formulas
+- `pdf`: Comprehensive PDF manipulation toolkit for extracting text and tables, creating new PDFs, merging/splitting documents, and handling forms. When Claude needs to fill in a PDF form or programmatically process, generate, or analyze PDF documents at scale.
+- `pptx`: Presentation creation, editing, and analysis. When Claude needs to work with presentations (.pptx files) for: (1) Creating new presentations, (2) Modifying or editing content, (3) Working with layouts, (4) Adding comments or speaker notes, or any other presentation tasks
+- `docx`: Comprehensive document creation, editing, and analysis with support for tracked changes, comments, formatting preservation, and text extraction. When Claude needs to work with professional documents (.docx files) for: (1) Creating new documents, (2) Modifying or editing content, (3) Working with tracked changes, (4) Adding comments, or any other document tasks
+- `template-skill`: Replace with description of the skill and when Claude should use it.
+- `theme-factory`: Toolkit for styling artifacts with a theme. These artifacts can be slides, docs, reportings, HTML landing pages, etc. There are 10 pre-set themes with colors/fonts that you can apply to any artifact that has been creating, or can generate a new theme on-the-fly.
+- `algorithmic-art`: Creating algorithmic art using p5.js with seeded randomness and interactive parameter exploration. Use this when users request creating art using code, generative art, algorithmic art, flow fields, or particle systems. Create original algorithmic art rather than copying existing artists' work to avoid copyright violations.
+- `internal-comms`: A set of resources to help me write all kinds of internal communications, using the formats that my company likes to use. Claude should use this skill whenever asked to write some sort of internal communications (status reports, leadership updates, 3P updates, company newsletters, FAQs, incident reports, project updates, etc.).
+- `skill-creator`: Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Claude's capabilities with specialized knowledge, workflows, or tool integrations.
+- `canvas-design`: Create beautiful visual art in .png and .pdf documents using design philosophy. You should use this skill when the user asks to create a poster, piece of art, design, or other static piece. Create original visual designs, never copying existing artists' work to avoid copyright violations.
+- `slack-gif-creator`: Toolkit for creating animated GIFs optimized for Slack, with validators for size constraints and composable animation primitives. This skill applies when users request animated GIFs or emoji animations for Slack from descriptions like "make me a GIF for Slack of X doing Y".
+- `artifacts-builder`: Suite of tools for creating elaborate, multi-component claude.ai HTML artifacts using modern frontend web technologies (React, Tailwind CSS, shadcn/ui). Use for complex artifacts requiring state management, routing, or shadcn/ui components - not for simple single-file HTML/JSX artifacts.
+- `webapp-testing`: Toolkit for interacting with and testing local web applications using Playwright. Supports verifying frontend functionality, debugging UI behavior, capturing browser screenshots, and viewing browser logs.
+- `mcp-builder`: Guide for creating high-quality MCP (Model Context Protocol) servers that enable LLMs to interact with external services through well-designed tools. Use when building MCP servers to integrate external APIs or services, whether in Python (FastMCP) or Node/TypeScript (MCP SDK).
+- `brand-guidelines`: Applies Anthropic's official brand colors and typography to any sort of artifact that may benefit from having Anthropic's look-and-feel. Use it when brand colors or style guidelines, visual formatting, or company design standards apply.
+
+## Working Guidelines
+
+### Task Execution
+1. **Analyze** the request and identify if a skill can help
+2. **Break down** complex tasks into clear, executable steps
+3. **Use skills** when appropriate for specialized guidance
+4. **Execute** tools systematically and check results
+5. **Report** progress and any issues encountered
+
+### File Operations
+- Use absolute paths or workspace-relative paths
+- Verify file existence before reading/editing
+- Create parent directories before writing files
+- Handle errors gracefully with clear messages
+
+### Bash Commands
+- Explain destructive operations before execution
+- Check command outputs for errors
+- Use appropriate error handling
+- Prefer specialized tools over raw commands when available
+
+### Python Environment Management
+**CRITICAL - Use `uv` for all Python operations. Before executing Python code:**
+1. Check/create venv: `if [ ! -d .venv ]; then uv venv; fi`
+2. Install packages: `uv pip install <package>`
+3. Run scripts: `uv run python script.py`
+4. If uv missing: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+
+**Python-based skills:** pdf, pptx, docx, xlsx, canvas-design, algorithmic-art 
+
+### Communication
+- Be concise but thorough in responses
+- Explain your approach before tool execution
+- Report errors with context and solutions
+- Summarize accomplishments when complete
+
+### Best Practices
+- **Don't guess** - use tools to discover missing information
+- **Be proactive** - infer intent and take reasonable actions
+- **Stay focused** - stop when the task is fulfilled
+- **Use skills** - leverage specialized knowledge when relevant
+
+## Workspace Context
+You are working in a workspace directory. All operations are relative to this context unless absolute paths are specified.
+
+
+## Current Workspace
+You are currently working in: `/Users/fayespica/git/FayeSpica/Mini-Agent`
+All relative paths will be resolved relative to this directory.
+
+Message 2 [user]:
+Content: 帮我分析test_data.xlsx里有什么
+
+Message 3 [assistant]:
+Content: 我来帮你分析 test_data.xlsx 文件的内容。首先，我会使用 xlsx 技能来读取和分析这个 Excel 文件。
+
+
+Tool Calls: [
+  {
+    "id": "call_bea536e760d447259c29c3",
+    "type": "function",
+    "function": {
+      "name": "get_skill",
+      "arguments": {
+        "skill_name": "xlsx"
+      }
+    }
+  }
+]
+
+Message 4 [tool]:
+Content: 
+# Skill: xlsx
+
+Comprehensive spreadsheet creation, editing, and analysis with support for formulas, formatting, data analysis, and visualization. When Claude needs to work with spreadsheets (.xlsx, .xlsm, .csv, .tsv, etc) for: (1) Creating new spreadsheets with formulas and formatting, (2) Reading or analyzing data, (3) Modify existing spreadsheets while preserving formulas, (4) Data analysis and visualization in spreadsheets, or (5) Recalculating formulas
+
+---
+
+# Requirements for Outputs
+
+## All Excel files
+
+### Zero Formula Errors
+- Every Excel model MUST be delivered with ZERO formula errors (#REF!, #DIV/0!, #VALUE!, #N/A, #NAME?)
+
+### Preserve Existing Templates (when updating templates)
+- Study and EXACTLY match existing format, style, and conventions when modifying files
+- Never impose standardized formatting on files with established patterns
+- Existing template conventions ALWAYS override these guidelines
+
+## Financial models
+
+### Color Coding Standards
+Unless otherwise stated by the user or existing template
+
+#### Industry-Standard Color Conventions
+- **Blue text (RGB: 0,0,255)**: Hardcoded inputs, and numbers users will change for scenarios
+- **Black text (RGB: 0,0,0)**: ALL formulas and calculations
+- **Green text (RGB: 0,128,0)**: Links pulling from other worksheets within same workbook
+- **Red text (RGB: 255,0,0)**: External links to other files
+- **Yellow background (RGB: 255,255,0)**: Key assumptions needing attention or cells that need to be updated
+
+### Number Formatting Standards
+
+#### Required Format Rules
+- **Years**: Format as text strings (e.g., "2024" not "2,024")
+- **Currency**: Use $#,##0 format; ALWAYS specify units in headers ("Revenue ($mm)")
+- **Zeros**: Use number formatting to make all zeros "-", including percentages (e.g., "$#,##0;($#,##0);-")
+- **Percentages**: Default to 0.0% format (one decimal)
+- **Multiples**: Format as 0.0x for valuation multiples (EV/EBITDA, P/E)
+- **Negative numbers**: Use parentheses (123) not minus -123
+
+### Formula Construction Rules
+
+#### Assumptions Placement
+- Place ALL assumptions (growth rates, margins, multiples, etc.) in separate assumption cells
+- Use cell references instead of hardcoded values in formulas
+- Example: Use =B5*(1+$B$6) instead of =B5*1.05
+
+#### Formula Error Prevention
+- Verify all cell references are correct
+- Check for off-by-one errors in ranges
+- Ensure consistent formulas across all projection periods
+- Test with edge cases (zero values, negative numbers)
+- Verify no unintended circular references
+
+#### Documentation Requirements for Hardcodes
+- Comment or in cells beside (if end of table). Format: "Source: [System/Document], [Date], [Specific Reference], [URL if applicable]"
+- Examples:
+  - "Source: Company 10-K, FY2024, Page 45, Revenue Note, [SEC EDGAR URL]"
+  - "Source: Company 10-Q, Q2 2025, Exhibit 99.1, [SEC EDGAR URL]"
+  - "Source: Bloomberg Terminal, 8/15/2025, AAPL US Equity"
+  - "Source: FactSet, 8/20/2025, Consensus Estimates Screen"
+
+# XLSX creation, editing, and analysis
+
+## Overview
+
+A user may ask you to create, edit, or analyze the contents of an .xlsx file. You have different tools and workflows available for different tasks.
+
+## Important Requirements
+
+**LibreOffice Required for Formula Recalculation**: You can assume LibreOffice is installed for recalculating formula values using the `recalc.py` script. The script automatically configures LibreOffice on first run
+
+## Reading and analyzing data
+
+### Data analysis with pandas
+For data analysis, visualization, and basic operations, use **pandas** which provides powerful data manipulation capabilities:
+
+```python
+import pandas as pd
+
+# Read Excel
+df = pd.read_excel('file.xlsx')  # Default: first sheet
+all_sheets = pd.read_excel('file.xlsx', sheet_name=None)  # All sheets as dict
+
+# Analyze
+df.head()      # Preview data
+df.info()      # Column info
+df.describe()  # Statistics
+
+# Write Excel
+df.to_excel('output.xlsx', index=False)
+```
+
+## Excel File Workflows
+
+## CRITICAL: Use Formulas, Not Hardcoded Values
+
+**Always use Excel formulas instead of calculating values in Python and hardcoding them.** This ensures the spreadsheet remains dynamic and updateable.
+
+### ❌ WRONG - Hardcoding Calculated Values
+```python
+# Bad: Calculating in Python and hardcoding result
+total = df['Sales'].sum()
+sheet['B10'] = total  # Hardcodes 5000
+
+# Bad: Computing growth rate in Python
+growth = (df.iloc[-1]['Revenue'] - df.iloc[0]['Revenue']) / df.iloc[0]['Revenue']
+sheet['C5'] = growth  # Hardcodes 0.15
+
+# Bad: Python calculation for average
+avg = sum(values) / len(values)
+sheet['D20'] = avg  # Hardcodes 42.5
+```
+
+### ✅ CORRECT - Using Excel Formulas
+```python
+# Good: Let Excel calculate the sum
+sheet['B10'] = '=SUM(B2:B9)'
+
+# Good: Growth rate as Excel formula
+sheet['C5'] = '=(C4-C2)/C2'
+
+# Good: Average using Excel function
+sheet['D20'] = '=AVERAGE(D2:D19)'
+```
+
+This applies to ALL calculations - totals, percentages, ratios, differences, etc. The spreadsheet should be able to recalculate when source data changes.
+
+## Common Workflow
+1. **Choose tool**: pandas for data, openpyxl for formulas/formatting
+2. **Create/Load**: Create new workbook or load existing file
+3. **Modify**: Add/edit data, formulas, and formatting
+4. **Save**: Write to file
+5. **Recalculate formulas (MANDATORY IF USING FORMULAS)**: Use the recalc.py script
+   ```bash
+   python recalc.py output.xlsx
+   ```
+6. **Verify and fix any errors**: 
+   - The script returns JSON with error details
+   - If `status` is `errors_found`, check `error_summary` for specific error types and locations
+   - Fix the identified errors and recalculate again
+   - Common errors to fix:
+     - `#REF!`: Invalid cell references
+     - `#DIV/0!`: Division by zero
+     - `#VALUE!`: Wrong data type in formula
+     - `#NAME?`: Unrecognized formula name
+
+### Creating new Excel files
+
+```python
+# Using openpyxl for formulas and formatting
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment
+
+wb = Workbook()
+sheet = wb.active
+
+# Add data
+sheet['A1'] = 'Hello'
+sheet['B1'] = 'World'
+sheet.append(['Row', 'of', 'data'])
+
+# Add formula
+sheet['B2'] = '=SUM(A1:A10)'
+
+# Formatting
+sheet['A1'].font = Font(bold=True, color='FF0000')
+sheet['A1'].fill = PatternFill('solid', start_color='FFFF00')
+sheet['A1'].alignment = Alignment(horizontal='center')
+
+# Column width
+sheet.column_dimensions['A'].width = 20
+
+wb.save('output.xlsx')
+```
+
+### Editing existing Excel files
+
+```python
+# Using openpyxl to preserve formulas and formatting
+from openpyxl import load_workbook
+
+# Load existing file
+wb = load_workbook('existing.xlsx')
+sheet = wb.active  # or wb['SheetName'] for specific sheet
+
+# Working with multiple sheets
+for sheet_name in wb.sheetnames:
+    sheet = wb[sheet_name]
+    print(f"Sheet: {sheet_name}")
+
+# Modify cells
+sheet['A1'] = 'New Value'
+sheet.insert_rows(2)  # Insert row at position 2
+sheet.delete_cols(3)  # Delete column 3
+
+# Add new sheet
+new_sheet = wb.create_sheet('NewSheet')
+new_sheet['A1'] = 'Data'
+
+wb.save('modified.xlsx')
+```
+
+## Recalculating formulas
+
+Excel files created or modified by openpyxl contain formulas as strings but not calculated values. Use the provided `recalc.py` script to recalculate formulas:
+
+```bash
+python recalc.py <excel_file> [timeout_seconds]
+```
+
+Example:
+```bash
+python recalc.py output.xlsx 30
+```
+
+The script:
+- Automatically sets up LibreOffice macro on first run
+- Recalculates all formulas in all sheets
+- Scans ALL cells for Excel errors (#REF!, #DIV/0!, etc.)
+- Returns JSON with detailed error locations and counts
+- Works on both Linux and macOS
+
+## Formula Verification Checklist
+
+Quick checks to ensure formulas work correctly:
+
+### Essential Verification
+- [ ] **Test 2-3 sample references**: Verify they pull correct values before building full model
+- [ ] **Column mapping**: Confirm Excel columns match (e.g., column 64 = BL, not BK)
+- [ ] **Row offset**: Remember Excel rows are 1-indexed (DataFrame row 5 = Excel row 6)
+
+### Common Pitfalls
+- [ ] **NaN handling**: Check for null values with `pd.notna()`
+- [ ] **Far-right columns**: FY data often in columns 50+ 
+- [ ] **Multiple matches**: Search all occurrences, not just first
+- [ ] **Division by zero**: Check denominators before using `/` in formulas (#DIV/0!)
+- [ ] **Wrong references**: Verify all cell references point to intended cells (#REF!)
+- [ ] **Cross-sheet references**: Use correct format (Sheet1!A1) for linking sheets
+
+### Formula Testing Strategy
+- [ ] **Start small**: Test formulas on 2-3 cells before applying broadly
+- [ ] **Verify dependencies**: Check all cells referenced in formulas exist
+- [ ] **Test edge cases**: Include zero, negative, and very large values
+
+### Interpreting recalc.py Output
+The script returns JSON with error details:
+```json
+{
+  "status": "success",           // or "errors_found"
+  "total_errors": 0,              // Total error count
+  "total_formulas": 42,           // Number of formulas in file
+  "error_summary": {              // Only present if errors found
+    "#REF!": {
+      "count": 2,
+      "locations": ["Sheet1!B5", "Sheet1!C10"]
+    }
+  }
+}
+```
+
+## Best Practices
+
+### Library Selection
+- **pandas**: Best for data analysis, bulk operations, and simple data export
+- **openpyxl**: Best for complex formatting, formulas, and Excel-specific features
+
+### Working with openpyxl
+- Cell indices are 1-based (row=1, column=1 refers to cell A1)
+- Use `data_only=True` to read calculated values: `load_workbook('file.xlsx', data_only=True)`
+- **Warning**: If opened with `data_only=True` and saved, formulas are replaced with values and permanently lost
+- For large files: Use `read_only=True` for reading or `write_only=True` for writing
+- Formulas are preserved but not evaluated - use recalc.py to update values
+
+### Working with pandas
+- Specify data types to avoid inference issues: `pd.read_excel('file.xlsx', dtype={'id': str})`
+- For large files, read specific columns: `pd.read_excel('file.xlsx', usecols=['A', 'C', 'E'])`
+- Handle dates properly: `pd.read_excel('file.xlsx', parse_dates=['date_column'])`
+
+## Code Style Guidelines
+**IMPORTANT**: When generating Python code for Excel operations:
+- Write minimal, concise Python code without unnecessary comments
+- Avoid verbose variable names and redundant operations
+- Avoid unnecessary print statements
+
+**For Excel files themselves**:
+- Add comments to cells with complex formulas or important assumptions
+- Document data sources for hardcoded values
+- Include notes for key calculations and model sections
+
+Tool Call ID: call_bea536e760d447259c29c3
+
+Tools: 8 tool(s) available
+Tool 1: {
+  "type": "function",
+  "function": {
+    "name": "bash",
+    "description": "Execute bash commands in foreground or background.\n\nFor terminal operations like git, npm, docker, etc. DO NOT use for file operations - use specialized tools.\n\nParameters:\n  - command (required): Bash command to execute\n  - timeout (optional): Timeout in seconds (default: 120, max: 600) for foreground commands\n  - run_in_background (optional): Set true for long-running commands (servers, etc.)\n\nTips:\n  - Quote file paths with spaces: cd \"My Documents\"\n  - Chain dependent commands with &&: git add . && git commit -m \"msg\"\n  - Use absolute paths instead of cd when possible\n  - For background commands, monitor with bash_output and terminate with bash_kill\n\nExamples:\n  - git status\n  - npm test\n  - python3 -m http.server 8080 (with run_in_background=true)",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": "string",
+          "description": "The bash command to execute. Quote file paths with spaces using double quotes."
+        },
+        "timeout": {
+          "type": "integer",
+          "description": "Optional: Timeout in seconds (default: 120, max: 600). Only applies to foreground commands.",
+          "default": 120
+        },
+        "run_in_background": {
+          "type": "boolean",
+          "description": "Optional: Set to true to run the command in the background. Use this for long-running commands like servers. You can monitor output using bash_output tool.",
+          "default": false
+        }
+      },
+      "required": [
+        "command"
+      ]
+    }
+  }
+}
+Tool 2: {
+  "type": "function",
+  "function": {
+    "name": "bash_output",
+    "description": "Retrieves output from a running or completed background bash shell.\n\n        - Takes a bash_id parameter identifying the shell\n        - Always returns only new output since the last check\n        - Returns stdout and stderr output along with shell status\n        - Supports optional regex filtering to show only lines matching a pattern\n        - Use this tool when you need to monitor or check the output of a long-running shell\n        - Shell IDs can be found using the bash tool with run_in_background=true\n\n        Process status values:\n          - \"running\": Still executing\n          - \"completed\": Finished successfully\n          - \"failed\": Finished with error\n          - \"terminated\": Was terminated\n          - \"error\": Error occurred\n\n        Example: bash_output(bash_id=\"abc12345\")",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "bash_id": {
+          "type": "string",
+          "description": "The ID of the background shell to retrieve output from. Shell IDs are returned when starting a command with run_in_background=true."
+        },
+        "filter_str": {
+          "type": "string",
+          "description": "Optional regular expression to filter the output lines. Only lines matching this regex will be included in the result. Any lines that do not match will no longer be available to read."
+        }
+      },
+      "required": [
+        "bash_id"
+      ]
+    }
+  }
+}
+Tool 3: {
+  "type": "function",
+  "function": {
+    "name": "bash_kill",
+    "description": "Kills a running background bash shell by its ID.\n\n        - Takes a bash_id parameter identifying the shell to kill\n        - Attempts graceful termination (SIGTERM) first, then forces (SIGKILL) if needed\n        - Returns the final status and any remaining output before termination\n        - Cleans up all resources associated with the shell\n        - Use this tool when you need to terminate a long-running shell\n        - Shell IDs can be found using the bash tool with run_in_background=true\n\n        Example: bash_kill(bash_id=\"abc12345\")",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "bash_id": {
+          "type": "string",
+          "description": "The ID of the background shell to terminate. Shell IDs are returned when starting a command with run_in_background=true."
+        }
+      },
+      "required": [
+        "bash_id"
+      ]
+    }
+  }
+}
+Tool 4: {
+  "type": "function",
+  "function": {
+    "name": "get_skill",
+    "description": "Get complete content and guidance for a specified skill, used for executing specific types of tasks",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "skill_name": {
+          "type": "string",
+          "description": "Name of the skill to retrieve (use list_skills to view available skills)"
+        }
+      },
+      "required": [
+        "skill_name"
+      ]
+    }
+  }
+}
+Tool 5: {
+  "type": "function",
+  "function": {
+    "name": "read_file",
+    "description": "Read file contents from the filesystem. Output always includes line numbers in format 'LINE_NUMBER|LINE_CONTENT' (1-indexed). Supports reading partial content by specifying line offset and limit for large files. You can call this tool multiple times in parallel to read different files simultaneously.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Absolute or relative path to the file"
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Starting line number (1-indexed). Use for large files to read from specific line"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Number of lines to read. Use with offset for large files to read in chunks"
+        }
+      },
+      "required": [
+        "path"
+      ]
+    }
+  }
+}
+Tool 6: {
+  "type": "function",
+  "function": {
+    "name": "write_file",
+    "description": "Write content to a file. Will overwrite existing files completely. For existing files, you should read the file first using read_file. Prefer editing existing files over creating new ones unless explicitly needed.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Absolute or relative path to the file"
+        },
+        "content": {
+          "type": "string",
+          "description": "Complete content to write (will replace existing content)"
+        }
+      },
+      "required": [
+        "path",
+        "content"
+      ]
+    }
+  }
+}
+Tool 7: {
+  "type": "function",
+  "function": {
+    "name": "edit_file",
+    "description": "Perform exact string replacement in a file. The old_str must match exactly and appear uniquely in the file, otherwise the operation will fail. You must read the file first before editing. Preserve exact indentation from the source.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Absolute or relative path to the file"
+        },
+        "old_str": {
+          "type": "string",
+          "description": "Exact string to find and replace (must be unique in file)"
+        },
+        "new_str": {
+          "type": "string",
+          "description": "Replacement string (use for refactoring, renaming, etc.)"
+        }
+      },
+      "required": [
+        "path",
+        "old_str",
+        "new_str"
+      ]
+    }
+  }
+}
+Tool 8: {
+  "type": "function",
+  "function": {
+    "name": "record_note",
+    "description": "Record important information as session notes for future reference. Use this to record key facts, user preferences, decisions, or context that should be recalled later in the agent execution chain. Each note is timestamped.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string",
+          "description": "The information to record as a note. Be concise but specific."
+        },
+        "category": {
+          "type": "string",
+          "description": "Optional category/tag for this note (e.g., 'user_preference', 'project_info', 'decision')"
+        }
+      },
+      "required": [
+        "content"
+      ]
+    }
+  }
+}
