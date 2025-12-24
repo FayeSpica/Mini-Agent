@@ -429,7 +429,7 @@ skill_content = frontmatter_match.group(2).strip()
 flowchart TD
     CONTENT[技能内容文本] --> PATTERN1[模式1: 目录路径<br/>scripts/, examples/, etc.]
     CONTENT --> PATTERN2[模式2: 文档引用<br/>see/read reference.md]
-    CONTENT --> PATTERN3[模式3: Markdown链接<br/>[text](path.md)]
+    CONTENT --> PATTERN3["模式3: Markdown链接<br/>[text](path.md)"]
     
     PATTERN1 --> MATCH1{匹配?}
     PATTERN2 --> MATCH2{匹配?}
