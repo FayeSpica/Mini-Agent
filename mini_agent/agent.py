@@ -1,15 +1,20 @@
 """Core Agent implementation."""
 
 import json
+import logging
+from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import tiktoken
 
 from .llm import LLMClient
 from .logger import AgentLogger
-from .schema import Message
+from .schema import LLMResponse, Message
 from .tools.base import Tool, ToolResult
 from .utils import calculate_display_width
+
+logger = logging.getLogger(__name__)
 
 
 # ANSI color codes
@@ -49,7 +54,7 @@ class Agent:
         tools: list[Tool],
         max_steps: int = 50,
         workspace_dir: str = "./workspace",
-        token_limit: int = 80000,  # Summary triggered when tokens exceed this value
+        token_limit: int = 32*1024,  # Summary triggered when tokens exceed this value
     ):
         self.llm = llm_client
         self.tools = {tool.name: tool for tool in tools}
@@ -77,6 +82,10 @@ class Agent:
         self.api_total_tokens: int = 0
         # Flag to skip token check right after summary (avoid consecutive triggers)
         self._skip_next_token_check: bool = False
+
+        # Chat history directory
+        self.chat_history_dir = Path("chat_history")
+        self.chat_history_dir.mkdir(parents=True, exist_ok=True)
 
     def add_user_message(self, content: str):
         """Add a user message to history."""
@@ -278,6 +287,167 @@ Requirements:
             # Use simple text summary on failure
             return summary_content
 
+    def _estimate_tokens_for_logging(self, messages: list[Message], response: LLMResponse) -> int:
+        """Estimate token count for messages and response using tiktoken.
+
+        Args:
+            messages: List of conversation messages
+            response: LLMResponse object
+
+        Returns:
+            Estimated total token count
+        """
+        try:
+            # Use cl100k_base encoder (used by GPT-4 and most modern models)
+            encoding = tiktoken.get_encoding("cl100k_base")
+        except Exception:
+            # Fallback: if tiktoken initialization fails, use simple estimation
+            return self._estimate_tokens_fallback_for_logging(messages, response)
+
+        total_tokens = 0
+
+        # Count tokens in all messages
+        for msg in messages:
+            # Count text content
+            if isinstance(msg.content, str):
+                total_tokens += len(encoding.encode(msg.content))
+            elif isinstance(msg.content, list):
+                for block in msg.content:
+                    if isinstance(block, dict):
+                        # Convert dict to string for calculation
+                        total_tokens += len(encoding.encode(str(block)))
+
+            # Count thinking
+            if msg.thinking:
+                total_tokens += len(encoding.encode(msg.thinking))
+
+            # Count tool_calls
+            if msg.tool_calls:
+                total_tokens += len(encoding.encode(str(msg.tool_calls)))
+
+            # Metadata overhead per message (approximately 4 tokens)
+            total_tokens += 4
+
+        # Count tokens in response
+        if response.content:
+            total_tokens += len(encoding.encode(response.content))
+        if response.thinking:
+            total_tokens += len(encoding.encode(response.thinking))
+        if response.tool_calls:
+            total_tokens += len(encoding.encode(str(response.tool_calls)))
+        # Response message overhead
+        total_tokens += 4
+
+        return total_tokens
+
+    def _estimate_tokens_fallback_for_logging(self, messages: list[Message], response: LLMResponse) -> int:
+        """Fallback token estimation method (when tiktoken is unavailable)"""
+        total_chars = 0
+        for msg in messages:
+            if isinstance(msg.content, str):
+                total_chars += len(msg.content)
+            elif isinstance(msg.content, list):
+                for block in msg.content:
+                    if isinstance(block, dict):
+                        total_chars += len(str(block))
+
+            if msg.thinking:
+                total_chars += len(msg.thinking)
+
+            if msg.tool_calls:
+                total_chars += len(str(msg.tool_calls))
+
+        if response.content:
+            total_chars += len(response.content)
+        if response.thinking:
+            total_chars += len(response.thinking)
+        if response.tool_calls:
+            total_chars += len(str(response.tool_calls))
+
+        # Rough estimation: average 2.5 characters = 1 token
+        return int(total_chars / 2.5)
+
+    def _log_chat_history(
+        self,
+        messages: list[Message],
+        tools: list[Any] | None,
+        response: LLMResponse,
+        step_num: int
+    ) -> None:
+        """Log chat history to file.
+
+        Args:
+            messages: List of conversation messages (request)
+            tools: Optional list of available tools
+            response: LLMResponse object (response)
+            step_num: Step number (0-indexed)
+        """
+        
+        # Create log file path: chat_history/step_X.log
+        log_file = self.chat_history_dir / f"{step_num}.log"
+        
+        try:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            with open(log_file, "a", encoding="utf-8") as f:
+                f.write(f"\n{'='*80}\n")
+                f.write(f"Timestamp: {timestamp}\n")
+                f.write(f"Model: {self.llm.model}\n")
+                f.write(f"{'='*80}\n\n")
+                
+                # Log request messages
+                f.write("=== REQUEST ===\n")
+                for i, msg in enumerate(messages):
+                    f.write(f"\nMessage {i+1} [{msg.role}]:\n")
+                    if isinstance(msg.content, str):
+                        f.write(f"Content: {msg.content}\n")
+                    else:
+                        f.write(f"Content: {json.dumps(msg.content, ensure_ascii=False, indent=2)}\n")
+                    if msg.thinking:
+                        f.write(f"Thinking: {msg.thinking}\n")
+                    if msg.tool_calls:
+                        f.write(f"Tool Calls: {json.dumps([tc.model_dump() for tc in msg.tool_calls], ensure_ascii=False, indent=2)}\n")
+                    if msg.tool_call_id:
+                        f.write(f"Tool Call ID: {msg.tool_call_id}\n")
+                
+                # Log tools if present
+                if tools:
+                    f.write(f"\nTools: {len(tools)} tool(s) available\n")
+                    for i, tool in enumerate(tools):
+                        if isinstance(tool, dict):
+                            f.write(f"Tool {i+1}: {json.dumps(tool, ensure_ascii=False, indent=2)}\n")
+                        elif hasattr(tool, "to_openai_schema"):
+                            f.write(f"Tool {i+1}: {json.dumps(tool.to_openai_schema(), ensure_ascii=False, indent=2)}\n")
+                        else:
+                            f.write(f"Tool {i+1}: {str(tool)}\n")
+                
+                # Log response
+                f.write(f"\n=== RESPONSE ===\n")
+                if response.content:
+                    f.write(f"Content: {response.content}\n")
+                if response.thinking:
+                    f.write(f"Thinking: {response.thinking}\n")
+                if response.tool_calls:
+                    f.write(f"Tool Calls: {json.dumps([tc.model_dump() for tc in response.tool_calls], ensure_ascii=False, indent=2)}\n")
+                if response.usage:
+                    f.write(f"Token Usage: prompt={response.usage.prompt_tokens}, "
+                           f"completion={response.usage.completion_tokens}, "
+                           f"total={response.usage.total_tokens}\n")
+                f.write(f"Finish Reason: {response.finish_reason}\n")
+                
+                # If this is the end of a step (no tool calls), estimate total tokens
+                if not response.tool_calls:
+                    estimated_tokens = self._estimate_tokens_for_logging(messages, response)
+                    f.write(f"\n--- Step {step_num} Summary ---\n")
+                    f.write(f"Estimated Total Tokens: {estimated_tokens}\n")
+                    if response.usage:
+                        f.write(f"API Reported Tokens: {response.usage.total_tokens}\n")
+                
+                f.write(f"\n{'='*80}\n\n")
+                
+        except Exception as e:
+            logger.warning(f"Failed to write chat history to {log_file}: {e}")
+
     async def run(self) -> str:
         """Execute agent loop until task is complete or max steps reached."""
         # Start new run, initialize log file
@@ -331,6 +501,9 @@ Requirements:
                 tool_calls=response.tool_calls,
                 finish_reason=response.finish_reason,
             )
+
+            # Log chat history to file
+            self._log_chat_history(self.messages, tool_list, response, step)
 
             # Add assistant message
             assistant_msg = Message(

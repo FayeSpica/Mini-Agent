@@ -60,3 +60,5 @@ claude.md
 
 .agent_memory.json
 !analysis/*
+!chat_history_round1/*
+!chat_history_round2/*
